@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS验证码系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="notification" id="notification">
+        <i class="fas fa-info-circle"></i>
+        <span id="notification-text"></span>
+    </div>
+    
+    <div class="app">
+        <div class="header">
+            <h1>SMS验证码</h1>
+            <div class="header-stats">
+                <div class="stat">
+                    <span id="active-count">0</span>
+                    <label>活跃号码</label>
+                </div>
+                <div class="stat">
+                    <span id="success-count">0</span>
+                    <label>成功获取</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="numbers-container">
+            <div id="numbersList" class="numbers-list">
+                <!-- 号码列表将在这里动态显示 -->
+            </div>
+        </div>
+
+        <button id="getNumber" class="floating-button">
+            <i class="fas fa-plus"></i>
+            <span>获取新号码</span>
+        </button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
