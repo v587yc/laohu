@@ -1,7 +1,7 @@
 class SMSManager {
     constructor() {
         this.API_KEY = 'U7L2XoZEwn5DAExpvuoBFJNzi0iq2fx2';
-        this.BASE_URL = 'https://laohu-nu.vercel.app/';
+        this.BASE_URL = 'https://laohu-nu.vercel.app/api';
         this.activeNumbers = new Map();
         this.statusMap = {
             'STATUS_WAIT_CODE': '等待接收验证码中...',
