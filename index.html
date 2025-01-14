@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>获取号码和验证码</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .number-box, .status-box {
+            margin-bottom: 20px;
+        }
+        button {
+            margin-right: 10px;
+        }
+        .output {
+            font-size: 16px;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>号码与验证码获取</h1>
+    <div class="number-box">
+        <button id="getNumberBtn">获取号码</button>
+        <div id="numberOutput" class="output"></div>
+    </div>
+    <div class="status-box">
+        <button id="checkCodeBtn">等待验证码</button>
+        <button id="cancelNumberBtn">取消号码</button>
+        <button id="completeNumberBtn">完成使用</button>
+        <div id="statusOutput" class="output"></div>
+    </div>
+    <script>
+        const apiKey = "U7L2XoZEwn5DAExpvuoBFJNzi0iq2fx2";
+        const baseUrl = "https://api.tiger-sms.com/stubs/handler_api.php";
+        let currentId = null;
+        let currentNumber = null;
+
+        // 获取号码
+        document.getElementById('getNumberBtn').addEventListener('click', async () => {
+            const url = `${baseUrl}?api_key=${apiKey}&action=getNumber&service=hw&country=6`;
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                if (text.startsWith("ACCESS_NUMBER")) {
+                    const parts = text.split(":");
+                    currentId = parts[1];
+                    currentNumber = parts[2];
+                    document.getElementById('numberOutput').innerHTML = `
+                        获取到号码: ${currentNumber} 
+                        <button onclick="copyText('${currentNumber.slice(2)}')">复制号码</button>
+                    `;
+                } else {
+                    document.getElementById('numberOutput').innerText = `错误: ${text}`;
+                }
+            } catch (error) {
+                document.getElementById('numberOutput').innerText = `请求失败: ${error.message}`;
+            }
+        });
+
+        // 等待验证码
+        document.getElementById('checkCodeBtn').addEventListener('click', async () => {
+            if (!currentId) {
+                alert("请先获取号码！");
+                return;
+            }
+            const url = `${baseUrl}?api_key=${apiKey}&action=getStatus&id=${currentId}`;
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                document.getElementById('statusOutput').innerHTML = `状态: ${text}`;
+                if (text.startsWith("STATUS_OK")) {
+                    const code = text.split(":")[1].trim();
+                    document.getElementById('statusOutput').innerHTML += `
+                        <br>验证码: ${code} 
+                        <button onclick="copyText('${code}')">复制验证码</button>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('statusOutput').innerText = `请求失败: ${error.message}`;
+            }
+        });
+
+        // 取消号码
+        document.getElementById('cancelNumberBtn').addEventListener('click', async () => {
+            if (!currentId) {
+                alert("请先获取号码！");
+                return;
+            }
+            const url = `${baseUrl}?api_key=${apiKey}&action=setStatus&status=8&id=${currentId}`;
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                document.getElementById('statusOutput').innerText = `取消状态: ${text}`;
+            } catch (error) {
+                document.getElementById('statusOutput').innerText = `请求失败: ${error.message}`;
+            }
+        });
+
+        // 完成使用
+        document.getElementById('completeNumberBtn').addEventListener('click', async () => {
+            if (!currentId) {
+                alert("请先获取号码！");
+                return;
+            }
+            const url = `${baseUrl}?api_key=${apiKey}&action=setStatus&status=6&id=${currentId}`;
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                document.getElementById('statusOutput').innerText = `完成状态: ${text}`;
+            } catch (error) {
+                document.getElementById('statusOutput').innerText = `请求失败: ${error.message}`;
+            }
+        });
+
+        // 复制文本到剪贴板
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("复制成功: " + text);
+            }).catch(err => {
+                alert("复制失败: " + err.message);
+            });
+        }
+    </script>
+</body>
+</html>
