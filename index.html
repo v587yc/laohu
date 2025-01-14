@@ -102,13 +102,28 @@
     <script>
         const apiKey = "U7L2XoZEwn5DAExpvuoBFJNzi0iq2fx2";
         const baseUrl = "https://api.tiger-sms.com/stubs/handler_api.php";
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';  // 使用公共跨域代理
         let currentNumbers = [];
 
         // 获取号码
         async function getNumber() {
-            const url = `${baseUrl}?api_key=${apiKey}&action=getNumber&service=hw&country=6`;
+            const url = `${proxyUrl}${baseUrl}`;  // 使用代理URL
+            const data = {
+                api_key: apiKey,
+                action: 'getNumber',
+                service: 'hw',
+                country: '6'
+            };
+
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
                 const text = await response.text();
                 if (text.startsWith("ACCESS_NUMBER")) {
                     const parts = text.split(":");
