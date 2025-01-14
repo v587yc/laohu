@@ -6,116 +6,145 @@
     <title>获取号码和验证码</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+            background-color: #f5f5f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
-        .number-box, .status-box {
-            margin-bottom: 20px;
+
+        h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 40px;
         }
-        button {
-            margin-right: 10px;
+
+        .number-list {
+            width: 80%;
+            max-width: 800px;
+            margin-top: 20px;
         }
-        .output {
+
+        .number-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .number-item .number {
             font-size: 16px;
-            color: green;
+            color: #333;
+        }
+
+        .number-item .status {
+            font-size: 14px;
+            color: #007aff;
+        }
+
+        .number-item .time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .number-item button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .number-item button:hover {
+            background-color: #0051a2;
+        }
+
+        .number-item button:disabled {
+            background-color: #b5b5b5;
+            cursor: not-allowed;
+        }
+
+        .get-number-btn {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .get-number-btn:hover {
+            background-color: #0051a2;
         }
     </style>
 </head>
 <body>
-    <h1>号码与验证码获取</h1>
-    <div class="number-box">
-        <button id="getNumberBtn">获取号码</button>
-        <div id="numberOutput" class="output"></div>
-    </div>
-    <div class="status-box">
-        <button id="checkCodeBtn">等待验证码</button>
-        <button id="cancelNumberBtn">取消号码</button>
-        <button id="completeNumberBtn">完成使用</button>
-        <div id="statusOutput" class="output"></div>
-    </div>
-    
+    <h1>获取到的号码</h1>
+    <button class="get-number-btn" id="getNumberBtn">获取号码</button>
+
+    <div class="number-list" id="numberList"></div>
+
     <script>
         const apiKey = "U7L2XoZEwn5DAExpvuoBFJNzi0iq2fx2";
         const baseUrl = "https://api.tiger-sms.com/stubs/handler_api.php";
-        const proxy = 'https://cors-anywhere.herokuapp.com/'; // CORS 代理
-        let currentId = null;
-        let currentNumber = null;
+        let currentNumbers = [];
 
         // 获取号码
-        document.getElementById('getNumberBtn').addEventListener('click', async () => {
-            const url = `${proxy}${baseUrl}?api_key=${apiKey}&action=getNumber&service=hw&country=6`;
+        async function getNumber() {
+            const url = `${baseUrl}?api_key=${apiKey}&action=getNumber&service=hw&country=6`;
             try {
                 const response = await fetch(url);
                 const text = await response.text();
                 if (text.startsWith("ACCESS_NUMBER")) {
                     const parts = text.split(":");
-                    currentId = parts[1];
-                    currentNumber = parts[2];
-                    document.getElementById('numberOutput').innerHTML = `
-                        获取到号码: ${currentNumber} 
-                        <button onclick="copyText('${currentNumber.slice(2)}')">复制号码</button>
-                    `;
+                    const currentId = parts[1];
+                    const currentNumber = parts[2];
+                    currentNumbers.push({
+                        id: currentId,
+                        number: currentNumber,
+                        status: "等待验证码",
+                        time: `${Math.floor(Math.random() * 30)} 分钟`
+                    });
+                    updateNumberList();
                 } else {
-                    document.getElementById('numberOutput').innerText = `错误: ${text}`;
+                    alert(`获取号码失败: ${text}`);
                 }
             } catch (error) {
-                document.getElementById('numberOutput').innerText = `请求失败: ${error.message}`;
+                alert(`请求失败: ${error.message}`);
             }
-        });
+        }
 
-        // 等待验证码
-        document.getElementById('checkCodeBtn').addEventListener('click', async () => {
-            if (!currentId) {
-                alert("请先获取号码！");
-                return;
-            }
-            const url = `${proxy}${baseUrl}?api_key=${apiKey}&action=getStatus&id=${currentId}`;
-            try {
-                const response = await fetch(url);
-                const text = await response.text();
-                document.getElementById('statusOutput').innerHTML = `状态: ${text}`;
-                if (text.startsWith("STATUS_OK")) {
-                    const code = text.split(":")[1].trim();
-                    document.getElementById('statusOutput').innerHTML += `
-                        <br>验证码: ${code} 
-                        <button onclick="copyText('${code}')">复制验证码</button>
-                    `;
-                }
-            } catch (error) {
-                document.getElementById('statusOutput').innerText = `请求失败: ${error.message}`;
-            }
-        });
-
-        // 取消号码
-        document.getElementById('cancelNumberBtn').addEventListener('click', async () => {
-            if (!currentId) {
-                alert("请先获取号码！");
-                return;
-            }
-            const url = `${proxy}${baseUrl}?api_key=${apiKey}&action=setStatus&status=8&id=${currentId}`;
-            try {
-                const response = await fetch(url);
-                const text = await response.text();
-                document.getElementById('statusOutput').innerText = `取消状态: ${text}`;
-            } catch (error) {
-                document.getElementById('statusOutput').innerText = `请求失败: ${error.message}`;
-            }
-        });
-
-        // 完成使用
-        document.getElementById('completeNumberBtn').addEventListener('click', async () => {
-            if (!currentId) {
-                alert("请先获取号码！");
-                return;
-            }
-            const url = `${proxy}${baseUrl}?api_key=${apiKey}&action=setStatus&status=6&id=${currentId}`;
-            try {
-                const response = await fetch(url);
-                const text = await response.text();
-                document.getElementById('statusOutput').innerText = `完成状态: ${text}`;
-            } catch (error) {
-                document.getElementById('statusOutput').innerText = `请求失败: ${error.message}`;
-            }
-        });
+        // 更新号码列表
+        function updateNumberList() {
+            const numberListContainer = document.getElementById('numberList');
+            numberListContainer.innerHTML = '';
+            currentNumbers.forEach(number => {
+                const numberItem = document.createElement('div');
+                numberItem.classList.add('number-item');
+                numberItem.innerHTML = `
+                    <div class="number">${number.number}</div>
+                    <div class="status">${number.status}</div>
+                    <div class="time">${number.time}</div>
+                    <button onclick="copyText('${number.number.slice(2)}')">复制号码</button>
+                `;
+                numberListContainer.appendChild(numberItem);
+            });
+        }
 
         // 复制文本到剪贴板
         function copyText(text) {
@@ -125,6 +154,9 @@
                 alert("复制失败: " + err.message);
             });
         }
+
+        // 按钮点击事件 - 获取号码
+        document.getElementById('getNumberBtn').addEventListener('click', getNumber);
     </script>
 </body>
 </html>
