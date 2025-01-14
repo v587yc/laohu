@@ -2,7 +2,11 @@
   "version": 2,
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/health",
+      "dest": "/api/health.js"
+    },
+    {
+      "src": "/sms",
       "dest": "/api/proxy.js"
     }
   ]
