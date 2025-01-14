@@ -1,177 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>获取号码和验证码</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-            background-color: #f5f5f7;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-
-        h1 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 40px;
-        }
-
-        .number-list {
-            width: 80%;
-            max-width: 800px;
-            margin-top: 20px;
-        }
-
-        .number-item {
-            background-color: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .number-item .number {
-            font-size: 16px;
-            color: #333;
-        }
-
-        .number-item .status {
-            font-size: 14px;
-            color: #007aff;
-        }
-
-        .number-item .time {
-            font-size: 12px;
-            color: #999;
-        }
-
-        .number-item button {
-            background-color: #007aff;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 10px;
-            transition: background-color 0.3s ease;
-        }
-
-        .number-item button:hover {
-            background-color: #0051a2;
-        }
-
-        .number-item button:disabled {
-            background-color: #b5b5b5;
-            cursor: not-allowed;
-        }
-
-        .get-number-btn {
-            background-color: #007aff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 16px;
-            margin-top: 20px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .get-number-btn:hover {
-            background-color: #0051a2;
-        }
-    </style>
+    <title>SMS验证码系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>获取到的号码</h1>
-    <button class="get-number-btn" id="getNumberBtn">获取号码</button>
+    <div class="notification" id="notification">
+        <i class="fas fa-info-circle"></i>
+        <span id="notification-text"></span>
+    </div>
+    
+    <div class="app">
+        <div class="header">
+            <h1>SMS验证码</h1>
+            <div class="header-stats">
+                <div class="stat">
+                    <span id="active-count">0</span>
+                    <label>活跃号码</label>
+                </div>
+                <div class="stat">
+                    <span id="success-count">0</span>
+                    <label>成功获取</label>
+                </div>
+            </div>
+        </div>
 
-    <div class="number-list" id="numberList"></div>
+        <div class="numbers-container">
+            <div id="numbersList" class="numbers-list">
+                <!-- 号码列表将在这里动态显示 -->
+            </div>
+        </div>
 
-    <script>
-        const apiKey = "U7L2XoZEwn5DAExpvuoBFJNzi0iq2fx2";
-        const baseUrl = "https://api.tiger-sms.com/stubs/handler_api.php";
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';  // 使用公共跨域代理
-        let currentNumbers = [];
-
-        // 获取号码
-        async function getNumber() {
-            const url = `${proxyUrl}${baseUrl}`;  // 使用代理URL
-            const data = {
-                api_key: apiKey,
-                action: 'getNumber',
-                service: 'hw',
-                country: '6'
-            };
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const text = await response.text();
-                if (text.startsWith("ACCESS_NUMBER")) {
-                    const parts = text.split(":");
-                    const currentId = parts[1];
-                    const currentNumber = parts[2];
-                    currentNumbers.push({
-                        id: currentId,
-                        number: currentNumber,
-                        status: "等待验证码",
-                        time: `${Math.floor(Math.random() * 30)} 分钟`
-                    });
-                    updateNumberList();
-                } else {
-                    alert(`获取号码失败: ${text}`);
-                }
-            } catch (error) {
-                alert(`请求失败: ${error.message}`);
-            }
-        }
-
-        // 更新号码列表
-        function updateNumberList() {
-            const numberListContainer = document.getElementById('numberList');
-            numberListContainer.innerHTML = '';
-            currentNumbers.forEach(number => {
-                const numberItem = document.createElement('div');
-                numberItem.classList.add('number-item');
-                numberItem.innerHTML = `
-                    <div class="number">${number.number}</div>
-                    <div class="status">${number.status}</div>
-                    <div class="time">${number.time}</div>
-                    <button onclick="copyText('${number.number.slice(2)}')">复制号码</button>
-                `;
-                numberListContainer.appendChild(numberItem);
-            });
-        }
-
-        // 复制文本到剪贴板
-        function copyText(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert("复制成功: " + text);
-            }).catch(err => {
-                alert("复制失败: " + err.message);
-            });
-        }
-
-        // 按钮点击事件 - 获取号码
-        document.getElementById('getNumberBtn').addEventListener('click', getNumber);
-    </script>
+        <button id="getNumber" class="floating-button">
+            <i class="fas fa-plus"></i>
+            <span>获取新号码</span>
+        </button>
+    </div>
+    <script src="script.js"></script>
 </body>
-</html>
+</html> 
