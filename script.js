@@ -1,10 +1,7 @@
 class SMSManager {
     constructor() {
         this.API_KEY = 'U7L2XoZEwn5DAExpvuoBFJNzi0iq2fx2';
-        // 使用 cors-anywhere 代理
-        this.BASE_URL = 'https://your-worker.your-name.workers.dev';
-        // 或者使用 allorigins
-        // this.BASE_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.tiger-sms.com/stubs/handler_api.php');
+        this.BASE_URL = 'https://laohu-nu.vercel.app/';
         this.activeNumbers = new Map();
         this.statusMap = {
             'STATUS_WAIT_CODE': '等待接收验证码中...',
