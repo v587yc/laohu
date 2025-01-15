@@ -1,22 +1,15 @@
-class SMSManager {
-    constructor() {
-        this.API_KEY = 'U7L2XoZEwn5DAExpvuoBFJNzi0iq2fx2';
-        this.BASE_URL = 'https://laohu-nu.vercel.app/sms';
-        this.activeNumbers = new Map();
-        this.statusMap = {
-            'STATUS_WAIT_CODE': '等待接收验证码中...',
-            'STATUS_WAIT_RESEND': '等待重新发送验证码...',
-            'STATUS_CANCEL': '已取消',
-            'STATUS_OK': '验证码'
+// 添加配置管理类
+class Config {
+    static get API_CONFIG() {
+        return {
+            KEY: 'U7L2XoZEwn5DAExpvuoBFJNzi0iq2fx2',
+            BASE_URL: 'https://laohu-nu.vercel.app/sms',
+            HISTORY_API: 'https://your-domain.com/history-api.php'
         };
-        
-        // 添加用户相关属性
-        this.currentUser = null;
-        this.validUsers = ['594120', 'jq'];
-        this.userHistory = new Map();
-        
-        // 初始化 Firebase
-        const firebaseConfig = {
+    }
+    
+    static get FIREBASE_CONFIG() {
+        return {
             apiKey: "YVHbqJ7lDQHvpb9VGMMwbGdvoJ5OVwG0ei6q85oat",
             authDomain: "your-app.firebaseapp.com",
             databaseURL: "https://your-app.firebaseio.com",
@@ -25,14 +18,62 @@ class SMSManager {
             messagingSenderId: "your-sender-id",
             appId: "your-app-id"
         };
+    }
+    
+    static get STATUS_MAP() {
+        return {
+            'STATUS_WAIT_CODE': '等待接收验证码中...',
+            'STATUS_WAIT_RESEND': '等待重新发送验证码...',
+            'STATUS_CANCEL': '已取消',
+            'STATUS_OK': '验证码'
+        };
+    }
+    
+    static get VALID_USERS() {
+        return ['594120', 'jq'];
+    }
+}
+
+class SMSManager {
+    constructor() {
+        this.API_KEY = Config.API_CONFIG.KEY;
+        this.BASE_URL = Config.API_CONFIG.BASE_URL;
+        this.HISTORY_API = Config.API_CONFIG.HISTORY_API;
+        this.statusMap = Config.STATUS_MAP;
+        this.validUsers = Config.VALID_USERS;
+        this.activeNumbers = new Map();
         
-        firebase.initializeApp(firebaseConfig);
+        // 添加用户相关属性
+        this.currentUser = null;
+        this.userHistory = new Map();
+        
+        // 初始化 Firebase
+        firebase.initializeApp(Config.FIREBASE_CONFIG);
         this.database = firebase.database();
-        
-        this.HISTORY_API = 'https://your-domain.com/history-api.php'; // 替换为你的服务器地址
         
         this.initLogin();
         this.initTabs();
+        
+        // 缓存常用DOM元素
+        this.elements = {
+            numbersList: document.getElementById('numbersList'),
+            historyList: document.getElementById('historyList'),
+            notification: document.getElementById('notification'),
+            notificationText: document.getElementById('notification-text'),
+            stats: {
+                activeCount: document.getElementById('active-count'),
+                successCount: document.getElementById('success-count'),
+                historyCount: document.getElementById('history-count'),
+                balance: document.getElementById('balance-amount')
+            }
+        };
+        
+        // 添加音频对象
+        this.notificationSound = document.getElementById('notificationSound');
+        this.notificationSound.preload = 'auto';
+        
+        // 配置音频可以在后台播放(iOS)
+        this.setupBackgroundAudio();
     }
 
     initLogin() {
@@ -171,9 +212,7 @@ class SMSManager {
 
     // 修改更新统计方法
     async updateStats() {
-        const activeCount = document.getElementById('active-count');
-        const successCount = document.getElementById('success-count');
-        const historyCount = document.getElementById('history-count');
+        const { activeCount, successCount, historyCount } = this.elements.stats;
         
         activeCount.textContent = this.activeNumbers.size;
         successCount.textContent = Array.from(this.activeNumbers.values())
@@ -200,8 +239,12 @@ class SMSManager {
             if (status.startsWith('STATUS_OK:')) {
                 const code = status.split(':')[1].trim();
                 statusElement.className = 'status success';
-                statusElement.innerHTML = `${this.statusMap['STATUS_OK']}: <span class="code" onclick="navigator.clipboard.writeText('${code}')">${code}</span>`;
+                statusElement.innerHTML = `${this.statusMap['STATUS_OK']}: <span class="code">${code}</span>`;
                 data.polling = false;
+                data.code = code; // 保存验证码
+                
+                // 播放提示音
+                this.playNotificationSound();
                 
                 // 添加到历史记录
                 this.saveHistory(data.number, code);
@@ -267,8 +310,7 @@ class SMSManager {
 
     // 显示通知
     showNotification(message, type = 'info') {
-        const notification = document.getElementById('notification');
-        const notificationText = document.getElementById('notification-text');
+        const { notification, notificationText } = this.elements;
         
         notification.className = 'notification show ' + type;
         notificationText.textContent = message;
@@ -308,13 +350,24 @@ class SMSManager {
         
         const displayNumber = number.replace(/^62/, '');
         
-        // 添加 onclick 事件到整个 number-item
+        // 修改点击事件处理
         item.onclick = (e) => {
             // 如果点击的是按钮，不执行复制
             if (e.target.closest('.action-button')) {
                 return;
             }
-            this.copyNumber(displayNumber);
+            
+            // 检查是否已获取到验证码
+            const data = this.activeNumbers.get(id);
+            if (data && data.code) {
+                // 如果有验证码，复制验证码
+                this.copyText(data.code);
+                this.showNotification('验证码已复制', 'success');
+            } else {
+                // 如果没有验证码，复制手机号
+                this.copyText(displayNumber);
+                this.showNotification('手机号已复制', 'success');
+            }
         };
         
         item.innerHTML = `
@@ -508,6 +561,42 @@ class SMSManager {
             }
         } catch (error) {
             console.error('获取余额失败：', error);
+        }
+    }
+
+    // 配置音频可以在后台播放
+    setupBackgroundAudio() {
+        // iOS Safari需要这些设置来允许后台播放
+        if (this.notificationSound) {
+            this.notificationSound.setAttribute('playsinline', '');
+            this.notificationSound.setAttribute('webkit-playsinline', '');
+            this.notificationSound.setAttribute('preload', 'auto');
+        }
+    }
+
+    // 播放提示音
+    playNotificationSound() {
+        // 重置音频
+        this.notificationSound.currentTime = 0;
+        // 播放音频
+        this.notificationSound.play().catch(error => {
+            console.error('播放提示音失败:', error);
+        });
+    }
+
+    // 添加通用复制文本方法
+    async copyText(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (err) {
+            console.error('复制失败:', err);
+            // 降级处理
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
         }
     }
 }

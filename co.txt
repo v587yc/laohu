@@ -1,0 +1,135 @@
+好的,我来帮您分析整个项目的结构和关键点,我将用中文写一个完整的说明文档:
+
+```markdown
+# SMS验证码系统项目说明文档
+
+## 项目概述
+
+这是一个短信验证码接收系统,主要用于接收验证码并展示。系统包含前端界面和后端API代理。
+
+## 系统架构
+
+### 前端部分
+- 使用原生HTML/CSS/JavaScript开发
+- 界面包含登录、号码列表、历史记录等功能
+- 数据存储使用localStorage和Firebase实时数据库
+- 使用Font Awesome图标库
+
+### 后端部分
+- 使用PHP和Node.js构建的API代理服务
+- 数据库使用SQLite存储历史记录
+- 使用Vercel部署API服务
+
+## 关键配置点
+
+### 1. API密钥和端点
+位置: `script.js`中的SMSManager类
+```javascript
+this.API_KEY = 'U7L2XoZEwn5DAExpvuoBFJNzi0iq2fx2';
+this.BASE_URL = 'https://laohu-nu.vercel.app/sms';
+```
+这些需要根据实际API服务商更改
+
+### 2. 用户验证
+位置: `script.js`中的validUsers数组
+```javascript
+this.validUsers = ['594120', 'jq'];
+```
+需要配置允许登录的用户名列表
+
+### 3. Firebase配置
+位置: `script.js`中的firebaseConfig对象
+```javascript
+const firebaseConfig = {
+    apiKey: "YVHbqJ7lDQHvpb9VGMMwbGdvoJ5OVwG0ei6q85oat",
+    authDomain: "your-app.firebaseapp.com",
+    // ...其他配置
+};
+```
+需要替换为实际的Firebase项目配置
+
+### 4. 历史记录API地址
+位置: `script.js`
+```javascript
+this.HISTORY_API = 'https://your-domain.com/history-api.php';
+```
+需要配置为实际的历史记录API地址
+
+## API转发流程
+
+1. 前端请求 -> Vercel部署的API
+2. Vercel API (`/api/proxy.js`) -> Tiger SMS API
+3. 历史记录保存 -> PHP后端 -> SQLite数据库
+
+## 数据存储
+
+### 本地存储
+- 使用localStorage存储:
+  - 当前登录用户
+  - 活跃号码列表
+
+### 远程存储
+- Firebase实时数据库:
+  - 用户在线状态
+  - 实时数据同步
+- SQLite数据库:
+  - 历史记录
+  - 验证码记录
+
+## 可定制功能
+
+1. 界面定制
+- 修改`styles.css`中的配色方案
+- 调整UI组件布局和样式
+
+2. 业务逻辑
+- 修改轮询间隔时间
+- 调整号码有效期(默认20分钟)
+- 更改取消等待时间(默认120秒)
+
+3. API集成
+- 可替换为其他短信API服务商
+- 修改API请求参数和响应处理
+
+## 部署说明
+
+1. 前端部署
+- 使用GitHub Pages部署静态文件
+- 通过`static.yml`工作流自动部署
+
+2. API代理部署
+- 使用Vercel部署Node.js API
+- 配置在`vercel.json`中
+
+3. 历史记录API部署
+- 需要PHP环境
+- 需要SQLite支持
+- 配置跨域访问权限
+
+## 注意事项
+
+1. 安全性
+- API密钥保护
+- 用户认证机制
+- 跨域访问控制
+
+2. 性能优化
+- 轮询频率控制
+- 数据缓存策略
+- 并发请求限制
+
+3. 维护建议
+- 定期清理历史数据
+- 监控API使用额度
+- 检查系统日志
+
+## 项目文件说明
+
+- `index.html`: 主界面
+- `script.js`: 核心业务逻辑
+- `styles.css`: 样式表
+- `proxy.php`: PHP API代理
+- `history-api.php`: 历史记录API
+- `server.js`: Node.js API服务
+- `vercel.json`: Vercel部署配置
+```
