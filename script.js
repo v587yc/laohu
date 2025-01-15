@@ -71,9 +71,27 @@ class SMSManager {
         // 添加音频对象
         this.notificationSound = document.getElementById('notificationSound');
         this.notificationSound.preload = 'auto';
+        this.notificationSound.volume = 1.0; // 确保音量最大
         
         // 配置音频可以在后台播放(iOS)
         this.setupBackgroundAudio();
+        
+        // 添加页面可见性变化监听
+        this.setupVisibilityChange();
+    }
+
+    // 添加页面可见性变化监听
+    setupVisibilityChange() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // 页面进入后台时，确保所有轮询继续进行
+                this.activeNumbers.forEach((data, id) => {
+                    if (data.polling) {
+                        this.startPolling(id);
+                    }
+                });
+            }
+        });
     }
 
     initLogin() {
@@ -467,7 +485,8 @@ class SMSManager {
     }
 
     startPolling(id) {
-        const poll = () => {
+        const pollInterval = 5000; // 5秒轮询一次
+        const poll = async () => {
             const data = this.activeNumbers.get(id);
             if (!data || !data.polling) return;
 
@@ -478,13 +497,18 @@ class SMSManager {
             }
 
             if (data.pollTimer <= 0) {
-                this.getStatus(id);
+                await this.getStatus(id);
                 data.pollTimer = 5; // 重置倒计时
             } else {
                 data.pollTimer--;
             }
 
-            setTimeout(poll, 1000);
+            // 使用 requestAnimationFrame 来确保后台也能运行
+            if (document.hidden) {
+                setTimeout(poll, pollInterval);
+            } else {
+                requestAnimationFrame(() => setTimeout(poll, 1000));
+            }
         };
         poll();
     }
@@ -576,12 +600,25 @@ class SMSManager {
 
     // 播放提示音
     playNotificationSound() {
-        // 重置音频
-        this.notificationSound.currentTime = 0;
-        // 播放音频
-        this.notificationSound.play().catch(error => {
-            console.error('播放提示音失败:', error);
-        });
+        // 强制加载并播放
+        const playSound = async () => {
+            try {
+                await this.notificationSound.load();
+                this.notificationSound.currentTime = 0;
+                await this.notificationSound.play();
+            } catch (error) {
+                console.error('播放提示音失败:', error);
+            }
+        };
+        
+        // 如果是iOS设备，需要用户交互后才能播放
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            document.addEventListener('touchend', () => {
+                playSound();
+            }, { once: true });
+        } else {
+            playSound();
+        }
     }
 
     // 添加通用复制文本方法
