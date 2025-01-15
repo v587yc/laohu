@@ -6,8 +6,19 @@
     <title>SMS验证码系统</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
 </head>
 <body>
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-container">
+            <h2>用户登录</h2>
+            <input type="text" id="username" placeholder="请输入用户名" />
+            <button id="loginButton">登录</button>
+        </div>
+    </div>
+
     <div class="notification" id="notification">
         <i class="fas fa-info-circle"></i>
         <span id="notification-text"></span>
@@ -15,7 +26,19 @@
     
     <div class="app">
         <div class="header">
-            <h1>SMS验证码</h1>
+            <div class="header-title">
+                <h1>弟弟上号器</h1>
+                <div class="user-info">
+                    <div class="username">
+                        <i class="fas fa-user"></i>
+                        <span id="current-username">未登录</span>
+                    </div>
+                    <div class="balance" id="balance">
+                        <i class="fas fa-wallet"></i>
+                        <span id="balance-amount">0.00</span>
+                    </div>
+                </div>
+            </div>
             <div class="header-stats">
                 <div class="stat">
                     <span id="active-count">0</span>
@@ -25,12 +48,32 @@
                     <span id="success-count">0</span>
                     <label>成功获取</label>
                 </div>
+                <div class="stat">
+                    <span id="history-count">0</span>
+                    <label>历史总数</label>
+                </div>
             </div>
         </div>
 
-        <div class="numbers-container">
-            <div id="numbersList" class="numbers-list">
-                <!-- 号码列表将在这里动态显示 -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="current">当前号码</button>
+            <button class="tab-button" data-tab="history">历史记录</button>
+        </div>
+
+        <div class="tab-content">
+            <div id="current-tab" class="tab-pane active">
+                <div class="numbers-container">
+                    <div id="numbersList" class="numbers-list">
+                        <!-- 号码列表将在这里动态显示 -->
+                    </div>
+                </div>
+            </div>
+            <div id="history-tab" class="tab-pane">
+                <div class="history-container">
+                    <div id="historyList" class="history-list">
+                        <!-- 历史记录将在这里动态显示 -->
+                    </div>
+                </div>
             </div>
         </div>
 
